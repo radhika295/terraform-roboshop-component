@@ -163,3 +163,43 @@ resource "aws_autoscaling_group" "main" {
 
 }
 
+resource "aws_autoscaling_policy" "main" {
+  autoscaling_group_name = aws_autoscaling_group.main.name
+  name                   = "${local.common_name_suffix}-${var.component}"
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+
+    target_value = 75.0
+  }
+}
+
+resource "aws_lb_listener_rule" "main" {
+  listener_arn = local.listener_arn
+  priority     = var.rule_priority
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.main.arn
+  }
+
+  condition {
+    host_header {
+      values = [local.host_context]
+    }
+  }
+}
+
+resource "terraform_data" "main_local" {
+  triggers_replace = [
+    aws_instance.main.id
+  ]
+  
+  depends_on = [aws_autoscaling_policy.main]
+  provisioner "local-exec" {
+    command = "aws ec2 terminate-instances --instance-ids ${aws_instance.main.id}"
+  }
+}
