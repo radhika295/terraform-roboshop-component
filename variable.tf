@@ -11,3 +11,11 @@ variable "environment" {
 variable "component" {
 
 }
+
+variable "rule_priority" {
+     type = number
+}
+
+variable "domain_name" {
+    default = "devtraining.icu"
+    }
